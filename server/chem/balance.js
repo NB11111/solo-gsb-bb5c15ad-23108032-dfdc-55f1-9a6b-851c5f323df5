@@ -40,10 +40,14 @@ const toJsonNumber = (x) =>
     : x.toString();
 
 /**
- * leftCounts / rightCounts：parseFormula 返回的 Map 数组。
- * 返回 { status: 'balanced' | 'no-positive-solution' | 'not-unique', ... }
+ * 配平核心：leftCounts / rightCounts 为 parseFormula 返回的 Map 数组。
+ * 返回：
+ *  - 成功 { status:'balanced', nLeft, coeffs:bigint[]（按 left 后 right 排列）,
+ *           elements:string[], leftTotals:bigint[], rightTotals:bigint[] }
+ *  - 失败 { status:'no-positive-solution', reason } 或 { status:'not-unique', nullity }
+ * coeffs / totals 均保留 BigInt，便于后续精确有理数计算直接复用。
  */
-export function balanceEquation(leftCounts, rightCounts) {
+export function balanceEquationCore(leftCounts, rightCounts) {
   const all = [...leftCounts, ...rightCounts];
   const nLeft = leftCounts.length;
   const cols = all.length;
@@ -113,23 +117,43 @@ export function balanceEquation(leftCounts, rightCounts) {
   if (g > 1n) ints = ints.map((x) => x / g);
 
   // 各元素两侧原子总数
-  const elementRows = elements.map((el) => {
-    let l = 0n;
-    let rr = 0n;
+  const leftTotals = elements.map((el) => {
+    let t = 0n;
     leftCounts.forEach((counts, j) => {
-      l += BigInt(counts.get(el) || 0) * ints[j];
+      t += BigInt(counts.get(el) || 0) * ints[j];
     });
-    rightCounts.forEach((counts, j) => {
-      rr += BigInt(counts.get(el) || 0) * ints[nLeft + j];
-    });
-    return { symbol: el, left: toJsonNumber(l), right: toJsonNumber(rr) };
+    return t;
   });
+  const rightTotals = elements.map((el) => {
+    let t = 0n;
+    rightCounts.forEach((counts, j) => {
+      t += BigInt(counts.get(el) || 0) * ints[nLeft + j];
+    });
+    return t;
+  });
+
+  return { status: 'balanced', nLeft, coeffs: ints, elements, leftTotals, rightTotals };
+}
+
+/**
+ * leftCounts / rightCounts：parseFormula 返回的 Map 数组。
+ * 返回 { status: 'balanced' | 'no-positive-solution' | 'not-unique', ... }
+ */
+export function balanceEquation(leftCounts, rightCounts) {
+  const r = balanceEquationCore(leftCounts, rightCounts);
+  if (r.status !== 'balanced') return r;
+
+  const elementRows = r.elements.map((el, k) => ({
+    symbol: el,
+    left: toJsonNumber(r.leftTotals[k]),
+    right: toJsonNumber(r.rightTotals[k]),
+  }));
 
   return {
     status: 'balanced',
     coefficients: {
-      left: ints.slice(0, nLeft).map(toJsonNumber),
-      right: ints.slice(nLeft).map(toJsonNumber),
+      left: r.coeffs.slice(0, r.nLeft).map(toJsonNumber),
+      right: r.coeffs.slice(r.nLeft).map(toJsonNumber),
     },
     elements: elementRows,
   };
