@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseFormula, ParseError } from './chem/parse.js';
 import { balanceEquation } from './chem/balance.js';
+import { parseBound, analyzeFeed } from './chem/feed.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -12,8 +13,8 @@ app.use(express.json({ limit: '64kb' }));
 const MAX_SUBSTANCES = 20;
 const MAX_FORMULA_LEN = 200;
 
-app.post('/api/balance', (req, res) => {
-  const body = req.body ?? {};
+/** 校验并解析两侧化学式；错误推入 errors（携带 side/index/position 定位）。 */
+function parseSides(body) {
   const errors = [];
   const parsed = {};
 
@@ -55,10 +56,93 @@ app.post('/api/balance', (req, res) => {
     });
   }
 
+  return { errors, parsed };
+}
+
+app.post('/api/balance', (req, res) => {
+  const { errors, parsed } = parseSides(req.body ?? {});
   if (errors.length > 0) return res.json({ ok: false, errors });
 
   const result = balanceEquation(parsed.left, parsed.right);
   res.json({ ok: true, result });
+});
+
+// 投料区间分析：仅在唯一正系数解（balanced）时有意义。
+app.post('/api/feed-analysis', (req, res) => {
+  const body = req.body ?? {};
+  const { errors, parsed } = parseSides(body);
+  if (errors.length > 0) return res.json({ ok: false, errors });
+
+  const result = balanceEquation(parsed.left, parsed.right);
+  if (result.status !== 'balanced') {
+    return res.json({
+      ok: false,
+      errors: [
+        {
+          side: 'left',
+          index: -1,
+          position: null,
+          message:
+            result.status === 'not-unique'
+              ? '该反应配平系数不唯一，投料区间分析仅对唯一正系数解开放'
+              : '该反应无全部为正的配平系数，无法进行投料区间分析',
+        },
+      ],
+    });
+  }
+
+  // 区间按物质定位：每侧/每个物质独立校验
+  const rangeErrors = [];
+  const rawRanges = body.ranges;
+  if (!Array.isArray(rawRanges) || rawRanges.length !== parsed.left.length) {
+    rangeErrors.push({
+      side: 'left',
+      index: -1,
+      field: null,
+      message: '投料区间数量必须与反应物数量一致',
+    });
+  } else {
+    rawRanges.forEach((rg, i) => {
+      const push = (field, message) =>
+        rangeErrors.push({ side: 'left', index: i, field, message });
+
+      if (rg === null || typeof rg !== 'object') {
+        push(null, '投料区间格式不正确');
+        return;
+      }
+      let lower;
+      let upper;
+      try {
+        lower = parseBound(rg.lower);
+      } catch (e) {
+        push('lower', `下限无效：${e.message}`);
+      }
+      try {
+        upper = parseBound(rg.upper);
+      } catch (e) {
+        push('upper', `上限无效：${e.message}`);
+      }
+      if (lower !== undefined && upper !== undefined && upper.sub(lower).sign() < 0) {
+        push('upper', '上限不能小于下限');
+      }
+    });
+  }
+  if (rangeErrors.length > 0) return res.json({ ok: false, errors: rangeErrors });
+
+  const ranges = rawRanges.map((rg) => ({
+    lower: parseBound(rg.lower),
+    upper: parseBound(rg.upper),
+  }));
+  const analysis = analyzeFeed(result.coefficients.left, result.coefficients.right, ranges);
+
+  res.json({
+    ok: true,
+    result: {
+      status: 'balanced',
+      coefficients: result.coefficients,
+      analysis,
+    },
+  });
 });
 
 // 生产模式：托管前端构建产物

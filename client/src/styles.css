@@ -338,3 +338,272 @@ footer {
   color: var(--muted);
   text-align: center;
 }
+
+/* ---- 投料区间分析 ---- */
+.feed-section {
+  margin-top: 24px;
+  border-top: 1px dashed var(--line);
+  padding-top: 16px;
+}
+
+.feed-intro {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 0 0 14px;
+}
+
+.feed-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feed-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) 1fr;
+  grid-template-areas:
+    'name fields'
+    '. msgs';
+  align-items: center;
+  gap: 4px 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.feed-row.has-error {
+  border-color: var(--error-border);
+  background: var(--error-bg);
+}
+
+.feed-name {
+  grid-area: name;
+  font-size: 16px;
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  word-break: break-all;
+}
+
+.feed-name sub {
+  font-size: 11px;
+}
+
+.feed-coef {
+  color: var(--blue);
+  font-weight: 700;
+}
+
+.feed-fields {
+  grid-area: fields;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.feed-fields label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-tag {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.feed-fields input {
+  width: 120px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+  outline: none;
+}
+
+.feed-fields input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(47, 111, 237, 0.15);
+}
+
+.field-error input {
+  border-color: var(--red);
+  background: #fff;
+}
+
+.feed-sep {
+  color: var(--muted);
+}
+
+.feed-unit {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.feed-row-errors {
+  grid-area: msgs;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.field-msg {
+  color: var(--red);
+  font-size: 12.5px;
+}
+
+.feed-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 14px 0 10px;
+  flex-wrap: wrap;
+}
+
+.analyze-btn {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 26px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.analyze-btn:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.analyze-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.feed-global-errors {
+  margin: 6px 0 10px;
+  padding-left: 18px;
+  color: var(--red);
+  font-size: 13.5px;
+}
+
+.feed-result {
+  margin-top: 14px;
+}
+
+.xi-line {
+  font-size: 14.5px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.feed-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.feed-table th,
+.feed-table td {
+  border: 1px solid var(--line);
+  padding: 7px 12px;
+  text-align: center;
+}
+
+.feed-table th {
+  background: #f0f4fb;
+  font-weight: 600;
+}
+
+.feed-table .num-cell {
+  font-family: 'SFMono-Regular', Consolas, Menlo, monospace;
+}
+
+/* 竖排约分分数 */
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1.15;
+  margin: 0 2px;
+}
+
+.frac-bar {
+  width: 100%;
+  min-width: 14px;
+  border-top: 1.5px solid var(--ink);
+  margin: 1px 0;
+}
+
+.frac-num,
+.frac-den {
+  font-size: 0.92em;
+  padding: 0 3px;
+}
+
+.frac-int {
+  margin: 0 1px;
+}
+
+.limit-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.limit-always {
+  background: #fde7d9;
+  color: #b34a1e;
+  border: 1px solid #eebc9f;
+}
+
+.limit-partial {
+  background: #fff3d6;
+  color: #92680b;
+  border: 1px solid #ecd28b;
+}
+
+.limit-never {
+  background: #e5f4ec;
+  color: #147047;
+  border: 1px solid #a8d8bd;
+}
+
+.limit-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 600px) {
+  .feed-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'name'
+      'fields'
+      'msgs';
+  }
+}

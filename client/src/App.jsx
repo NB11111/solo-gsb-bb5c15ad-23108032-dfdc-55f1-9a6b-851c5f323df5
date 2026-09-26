@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import FormulaText from './FormulaText.jsx';
+import FeedAnalysis from './FeedAnalysis.jsx';
 
 const EXAMPLES = [
   { name: '氢气燃烧', left: ['H2', 'O2'], right: ['H2O'] },
@@ -48,13 +50,7 @@ function SubstancePanel({ title, accent, items, onChange, onRemove, onAdd }) {
   );
 }
 
-/** 将已验证的化学式中的数字渲染为下标。 */
-function FormulaText({ formula }) {
-  return formula.split(/(\d+)/g).map((part, i) =>
-    /^\d+$/.test(part) ? <sub key={i}>{part}</sub> : <span key={i}>{part}</span>
-  );
-}
-
+/** 语法错误条目（含物质序号与字符位置）。 */
 function ErrorItem({ err }) {
   const sideLabel = err.side === 'left' ? '左侧' : '右侧';
   const which = err.index >= 0 ? `第 ${err.index + 1} 个物质` : '整体';
@@ -229,6 +225,17 @@ export default function App() {
               ))}
             </tbody>
           </table>
+
+          {/*
+            投料区间分析仅对唯一正系数解开放；key 随反应式变化，
+            一旦修改反应式（含增删物质、载入示例）即整体重挂载，清除投料输入与结果。
+          */}
+          <FeedAnalysis
+            key={`${left.map((f) => f.trim()).join('|')}#${right.map((f) => f.trim()).join('|')}`}
+            left={left.map((f) => f.trim())}
+            right={right.map((f) => f.trim())}
+            coefficients={result.coefficients}
+          />
         </div>
       )}
 
